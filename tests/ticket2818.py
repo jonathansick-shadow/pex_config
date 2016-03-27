@@ -30,9 +30,11 @@ import lsst.utils.tests as utilsTests
 
 from ticket2818.define import BaseConfig
 
+
 class ImportTest(unittest.TestCase):
+
     def test(self):
-        from ticket2818.another import AnotherConfigurable # Leave this uncommented to demonstrate bug
+        from ticket2818.another import AnotherConfigurable  # Leave this uncommented to demonstrate bug
         config = BaseConfig()
         config.loadFromStream("""from ticket2818.another import AnotherConfigurable
 config.test.retarget(AnotherConfigurable)
@@ -42,6 +44,7 @@ config.test.retarget(AnotherConfigurable)
         print stream.getvalue()
         self.assertTrue("import ticket2818.another" in stream.getvalue())
 
+
 def suite():
     utilsTests.init()
     suites = []
@@ -49,8 +52,9 @@ def suite():
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
+
 def run(exit=False):
     utilsTests.run(suite(), exit)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     run(True)

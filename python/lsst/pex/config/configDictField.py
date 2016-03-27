@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,14 +9,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import traceback
@@ -25,7 +25,8 @@ from .config import Config, FieldValidationError, _typeStr, _joinNamePath
 from .dictField import Dict, DictField
 from .comparison import compareConfigs, compareScalars, getComparisonName
 
-__all__=["ConfigDictField"]
+__all__ = ["ConfigDictField"]
+
 
 class ConfigDict(Dict):
     """
@@ -34,6 +35,7 @@ class ConfigDict(Dict):
     Much like Dict, ConfigDict is a custom MutableMapper which tracks the
     history of changes to any of its items.    
     """
+
     def __init__(self, config, field, value, at, label):
         Dict.__init__(self, config, field, value, at, label, setHistory=False)
         self.history.append(("Dict initialized", at, label))
@@ -44,24 +46,24 @@ class ConfigDict(Dict):
                   "Attempting to set item at key %r to value %s"%(k, x)
             raise FieldValidationError(self._field, self._config, msg)
 
-        #validate keytype 
+        # validate keytype
         if type(k) != self._field.keytype:
-            msg = "Key %r is of type %s, expected type %s"%\
-                    (k, _typeStr(k), _typeStr(self._field.keytype))
+            msg = "Key %r is of type %s, expected type %s" %\
+                (k, _typeStr(k), _typeStr(self._field.keytype))
             raise FieldValidationError(self._field, self._config, msg)
 
-        #validate itemtype
+        # validate itemtype
         dtype = self._field.itemtype
         if type(x) != self._field.itemtype and x != self._field.itemtype:
-            msg = "Value %s at key %r is of incorrect type %s. Expected type %s"%\
-                    (x, k, _typeStr(x), _typeStr(self._field.itemtype))
-            raise FieldValidationError(self._field, self._config, msg)        
+            msg = "Value %s at key %r is of incorrect type %s. Expected type %s" %\
+                (x, k, _typeStr(x), _typeStr(self._field.itemtype))
+            raise FieldValidationError(self._field, self._config, msg)
 
         if at is None:
             at = traceback.extract_stack()[:-1]
         name = _joinNamePath(self._config._name, self._field.name, k)
         oldValue = self._dict.get(k, None)
-        if oldValue is None:            
+        if oldValue is None:
             if x == dtype:
                 self._dict[k] = dtype(__name=name, __at=at, __label=label)
             else:
@@ -75,12 +77,12 @@ class ConfigDict(Dict):
             if setHistory:
                 self.history.append(("Modified item at key %s"%k, at, label))
 
-
     def __delitem__(self, k, at=None, label="delitem"):
         if at is None:
             at = traceback.extract_stack()[:-1]
         Dict.__delitem__(self, k, at, label, False)
         self.history.append(("Removed item at key %s"%k, at, label))
+
 
 class ConfigDictField(DictField):
     """
@@ -96,16 +98,17 @@ class ConfigDictField(DictField):
     """
 
     DictClass = ConfigDict
+
     def __init__(self, doc, keytype, itemtype, default=None, optional=False, dictCheck=None, itemCheck=None):
         source = traceback.extract_stack(limit=2)[0]
-        self._setup( doc=doc, dtype=ConfigDict, default=default, check=None, 
-                optional=optional, source=source)
+        self._setup(doc=doc, dtype=ConfigDict, default=default, check=None,
+                    optional=optional, source=source)
         if keytype not in self.supportedTypes:
-            raise ValueError("'keytype' %s is not a supported type"%\
-                    _typeStr(keytype))
+            raise ValueError("'keytype' %s is not a supported type" %
+                             _typeStr(keytype))
         elif not issubclass(itemtype, Config):
-            raise ValueError("'itemtype' %s is not a supported type"%\
-                    _typeStr(itemtype))
+            raise ValueError("'itemtype' %s is not a supported type" %
+                             _typeStr(itemtype))
         if dictCheck is not None and not hasattr(dictCheck, "__call__"):
             raise ValueError("'dictCheck' must be callable")
         if itemCheck is not None and not hasattr(itemCheck, "__call__"):
@@ -115,14 +118,13 @@ class ConfigDictField(DictField):
         self.itemtype = itemtype
         self.dictCheck = dictCheck
         self.itemCheck = itemCheck
-  
+
     def rename(self, instance):
         configDict = self.__get__(instance)
-        if configDict is not None: 
+        if configDict is not None:
             for k in configDict:
                 fullname = _joinNamePath(instance._name, self.name, k)
                 configDict[k]._rename(fullname)
-
 
     def validate(self, instance):
         value = self.__get__(instance)
@@ -131,18 +133,18 @@ class ConfigDictField(DictField):
                 item = value[k]
                 item.validate()
                 if self.itemCheck is not None and not self.itemCheck(item):
-                    msg="Item at key %r is not a valid value: %s"%(k, item)
+                    msg = "Item at key %r is not a valid value: %s"%(k, item)
                     raise FieldValidationError(self, instance, msg)
         DictField.validate(self, instance)
 
-    def toDict(self, instance):        
-        configDict = self.__get__(instance) 
+    def toDict(self, instance):
+        configDict = self.__get__(instance)
         if configDict is None:
             return None
 
         dict_ = {}
         for k in configDict:
-            dict_[k]= configDict[k].toDict()
+            dict_[k] = configDict[k].toDict()
 
         return dict_
 
@@ -182,7 +184,7 @@ class ConfigDictField(DictField):
         name = getComparisonName(
             _joinNamePath(instance1._name, self.name),
             _joinNamePath(instance2._name, self.name)
-            )
+        )
         if not compareScalars("keys for %s" % name, d1.keys(), d2.keys(), output=output):
             return False
         equal = True

@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008-2015 AURA/LSST.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,14 +9,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -31,6 +31,7 @@ import tempfile
 from .comparison import getComparisonName, compareScalars, compareConfigs
 
 __all__ = ("Config", "Field", "FieldValidationError")
+
 
 def _joinNamePath(prefix=None, name=None, index=None):
     """
@@ -48,16 +49,18 @@ def _joinNamePath(prefix=None, name=None, index=None):
     else:
         return name
 
+
 def _autocast(x, dtype):
     """
     If appropriate perform type casting of value x to type dtype,
     otherwise return the original value x
     """
-    if dtype==float and type(x)==int:
+    if dtype == float and type(x) == int:
         return float(x)
-    if dtype==int and type(x)==long:
+    if dtype == int and type(x) == long:
         return int(x)
     return x
+
 
 def _typeStr(x):
     """
@@ -75,6 +78,7 @@ def _typeStr(x):
     else:
         return "%s.%s"%(xtype.__module__, xtype.__name__)
 
+
 class ConfigMeta(type):
     """A metaclass for Config
 
@@ -83,13 +87,15 @@ class ConfigMeta(type):
     an instance variable of the field itself (so you don't have to pass the
     name of the field to the field constructor).
     """
+
     def __init__(self, name, bases, dict_):
         type.__init__(self, name, bases, dict_)
         self._fields = {}
         self._source = traceback.extract_stack(limit=2)[0]
+
         def getFields(classtype):
             fields = {}
-            bases=list(classtype.__bases__)
+            bases = list(classtype.__bases__)
             bases.reverse()
             for b in bases:
                 fields.update(getFields(b))
@@ -109,6 +115,7 @@ class ConfigMeta(type):
             self._fields[name] = value
         type.__setattr__(self, name, value)
 
+
 class FieldValidationError(ValueError):
     """
     Custom exception class which holds additional information useful to
@@ -119,20 +126,22 @@ class FieldValidationError(ValueError):
     - history: full history of all changes to the Field instance
     - fieldSource: file and line number of the Field definition
     """
+
     def __init__(self, field, config, msg):
         self.fieldType = type(field)
         self.fieldName = field.name
-        self.fullname  = _joinNamePath(config._name, field.name)
+        self.fullname = _joinNamePath(config._name, field.name)
         self.history = config.history.setdefault(field.name, [])
         self.fieldSource = field.source
         self.configSource = config._source
-        error="%s '%s' failed validation: %s\n"\
-                "For more information read the Field definition at:\n%s"\
-                "And the Config definition at:\n%s"%\
-              (self.fieldType.__name__, self.fullname, msg,
-                      traceback.format_list([self.fieldSource])[0],
-                      traceback.format_list([self.configSource])[0])
+        error = "%s '%s' failed validation: %s\n"\
+            "For more information read the Field definition at:\n%s"\
+            "And the Config definition at:\n%s" %\
+            (self.fieldType.__name__, self.fullname, msg,
+             traceback.format_list([self.fieldSource])[0],
+             traceback.format_list([self.configSource])[0])
         ValueError.__init__(self, error)
+
 
 class Field(object):
     """A field in a a Config.
@@ -143,7 +152,7 @@ class Field(object):
     class Example(Config):
         myInt = Field(int, "an integer field!", default=0)
     """
-    supportedTypes=(str, bool, float, int, complex)
+    supportedTypes = (str, bool, float, int, complex)
 
     def __init__(self, doc, dtype, default=None, check=None, optional=False):
         """Initialize a Field.
@@ -220,8 +229,8 @@ class Field(object):
             return
 
         if not isinstance(value, self.dtype):
-            msg = "Value %s is of incorrect type %s. Expected type %s"%\
-                    (value, _typeStr(value), _typeStr(self.dtype))
+            msg = "Value %s is of incorrect type %s. Expected type %s" %\
+                (value, _typeStr(value), _typeStr(self.dtype))
             raise TypeError(msg)
         if self.check is not None and not self.check(value):
             msg = "Value %s is not a valid value"%str(value)
@@ -348,8 +357,9 @@ class Field(object):
         name = getComparisonName(
             _joinNamePath(instance1._name, self.name),
             _joinNamePath(instance2._name, self.name)
-            )
+        )
         return compareScalars(name, v1, v2, dtype=self.dtype, rtol=rtol, atol=atol, output=output)
+
 
 class RecordingImporter(object):
     """An Importer (for sys.meta_path) that records which modules are being imported.
@@ -362,6 +372,7 @@ class RecordingImporter(object):
 
     This class makes no effort to do any importing itself.
     """
+
     def __init__(self):
         """Create and install the Importer"""
         self._modules = set()
@@ -374,7 +385,7 @@ class RecordingImporter(object):
 
     def __exit__(self, *args):
         self.uninstall()
-        return False # Don't suppress exceptions
+        return False  # Don't suppress exceptions
 
     def uninstall(self):
         """Uninstall the Importer"""
@@ -391,6 +402,7 @@ class RecordingImporter(object):
     def getModules(self):
         """Return the set of modules that were imported."""
         return self._modules
+
 
 class Config(object):
     """Base class for control objects.
@@ -414,10 +426,12 @@ class Config(object):
         """!Return the list of field names
         """
         return self._storage.keys()
+
     def values(self):
         """!Return the list of field values
         """
         return self._storage.values()
+
     def items(self):
         """!Return the list of (field name, field value) pairs
         """
@@ -462,14 +476,14 @@ class Config(object):
         kw.pop("__label", "default")
 
         instance = object.__new__(cls)
-        instance._frozen=False
-        instance._name=name
+        instance._frozen = False
+        instance._name = name
         instance._storage = {}
         instance._history = {}
         instance._imports = set()
         # load up defaults
         for field in instance._fields.itervalues():
-            instance._history[field.name]=[]
+            instance._history[field.name] = []
             field.__set__(instance, field.default, at=at+[field.source], label="default")
         # set custom default-overides
         instance.setDefaults()
@@ -558,8 +572,8 @@ class Config(object):
                         filename = getattr(stream, "co_filename", None)
                         if filename is None:
                             filename = getattr(stream, "name", "?")
-                    sys.stderr.write("Config override file %r" % (filename,) + \
-                        " appears to use 'root' instead of 'config'; trying with 'root'")
+                    sys.stderr.write("Config override file %r" % (filename,) +
+                                     " appears to use 'root' instead of 'config'; trying with 'root'")
                     local = {"root": self}
                     exec stream in {}, local
 
@@ -597,7 +611,7 @@ class Config(object):
     def freeze(self):
         """!Make this Config and all sub-configs read-only
         """
-        self._frozen=True
+        self._frozen = True
         for field in self._fields.itervalues():
             field.freeze(self)
 
@@ -678,7 +692,7 @@ class Config(object):
         """
         if attr in self._fields:
             if at is None:
-                at=traceback.extract_stack()[:-1]
+                at = traceback.extract_stack()[:-1]
             # This allows Field descriptors to work.
             self._fields[attr].__set__(self, value, at=at, label=label)
         elif hasattr(getattr(self.__class__, attr, None), '__set__'):
@@ -694,7 +708,7 @@ class Config(object):
     def __delattr__(self, attr, at=None, label="deletion"):
         if attr in self._fields:
             if at is None:
-                at=traceback.extract_stack()[:-1]
+                at = traceback.extract_stack()[:-1]
             self._fields[attr].__delete__(self, at=at, label=label)
         else:
             object.__delattr__(self, attr)
@@ -722,7 +736,7 @@ class Config(object):
         return "%s(%s)" % (
             _typeStr(self),
             ", ".join("%s=%r" % (k, v) for k, v in self.toDict().iteritems() if v is not None)
-            )
+        )
 
     def compare(self, other, shortcut=True, rtol=1E-8, atol=1E-8, output=None):
         """!Compare two Configs for equality; return True if equal
@@ -744,6 +758,7 @@ class Config(object):
         name = getComparisonName(name1, name2)
         return compareConfigs(name, self, other, shortcut=shortcut,
                               rtol=rtol, atol=atol, output=output)
+
 
 def unreduceConfig(cls, stream):
     config = cls()

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -11,14 +11,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import io
@@ -32,28 +32,32 @@ import pickle
 
 GLOBAL_REGISTRY = {}
 
+
 class Simple(pexConfig.Config):
     i = pexConfig.Field("integer test", int, optional=True)
     f = pexConfig.Field("float test", float, default=3.0)
     b = pexConfig.Field("boolean test", bool, default=False, optional=False)
     c = pexConfig.ChoiceField("choice test", str, default="Hello",
-            allowed={"Hello":"First choice", "World":"second choice"})
+                              allowed={"Hello": "First choice", "World": "second choice"})
     r = pexConfig.RangeField("Range test", float, default = 3.0, optional=False,
-            min=3.0, inclusiveMin=True)
-    l = pexConfig.ListField("list test", int, default=[1,2,3], maxLength=5,
-        itemCheck=lambda x: x is not None and x>0)
-    d = pexConfig.DictField("dict test", str, str, default={"key":"value"}, 
-            itemCheck=lambda x: x.startswith('v'))
+                             min=3.0, inclusiveMin=True)
+    l = pexConfig.ListField("list test", int, default=[1, 2, 3], maxLength=5,
+                            itemCheck=lambda x: x is not None and x > 0)
+    d = pexConfig.DictField("dict test", str, str, default={"key": "value"},
+                            itemCheck=lambda x: x.startswith('v'))
     n = pexConfig.Field("nan test", float, default=float("NAN"))
 
 GLOBAL_REGISTRY["AAA"] = Simple
+
 
 class InnerConfig(pexConfig.Config):
     f = pexConfig.Field("Inner.f", float, default=0.0, check = lambda x: x >= 0, optional=False)
 GLOBAL_REGISTRY["BBB"] = InnerConfig
 
+
 class OuterConfig(InnerConfig, pexConfig.Config):
-    i = pexConfig.ConfigField("Outer.i", InnerConfig)   
+    i = pexConfig.ConfigField("Outer.i", InnerConfig)
+
     def __init__(self):
         pexConfig.Config.__init__(self)
         self.i.f = 5.0
@@ -73,12 +77,13 @@ class Complex(pexConfig.Config):
 
 
 class ConfigTest(unittest.TestCase):
-    def setUp(self): 
+
+    def setUp(self):
         self.simple = Simple()
         self.inner = InnerConfig()
         self.outer = OuterConfig()
         self.comp = Complex()
-    
+
     def tearDown(self):
         del self.simple
         del self.inner
@@ -90,7 +95,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.simple.f, 3.0)
         self.assertEqual(self.simple.b, False)
         self.assertEqual(self.simple.c, "Hello")
-        self.assertEqual(list(self.simple.l), [1,2,3])
+        self.assertEqual(list(self.simple.l), [1, 2, 3])
         self.assertEqual(self.simple.d["key"], "value")
         self.assertEqual(self.inner.f, 0.0)
 
@@ -102,17 +107,16 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.comp.r.active.f, 3.0)
         self.assertEqual(self.comp.r["BBB"].f, 0.0)
 
-
     def testValidate(self):
         self.simple.validate()
 
         self.inner.validate()
-        self.assertRaises(ValueError, setattr, self.outer.i, "f",-5)
-        self.outer.i.f=10.
+        self.assertRaises(ValueError, setattr, self.outer.i, "f", -5)
+        self.outer.i.f = 10.
         self.outer.validate()
-       
+
         try:
-            self.simple.d["failKey"]="failValue"
+            self.simple.d["failKey"] = "failValue"
         except pexConfig.FieldValidationError:
             pass
         except:
@@ -123,11 +127,11 @@ class ConfigTest(unittest.TestCase):
         self.assertRaises(ValueError, self.outer.validate)
         self.outer.i = InnerConfig()
         self.assertRaises(ValueError, self.outer.validate)
-        
+
         self.comp.validate()
-        self.comp.r= None
+        self.comp.r = None
         self.assertRaises(ValueError, self.comp.validate)
-        self.comp.r="BBB"
+        self.comp.r = "BBB"
         self.comp.validate()
 
     def testRangeFieldConstructor(self):
@@ -141,16 +145,16 @@ class ConfigTest(unittest.TestCase):
                 # should not raise
                 class Cfg1(pexConfig.Config):
                     r1 = pexConfig.RangeField(doc="", dtype=int,
-                        default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                              default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
                     r2 = pexConfig.RangeField(doc="", dtype=float,
-                        default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                              default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
                 Cfg1()
             else:
                 # raise while constructing the RangeField (hence cannot make it part of a Config)
                 self.assertRaises(ValueError, pexConfig.RangeField, doc="", dtype=int,
-                    default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                  default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
                 self.assertRaises(ValueError, pexConfig.RangeField, doc="", dtype=float,
-                    default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                  default=val, min=val, max=val, inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
 
     def testRangeFieldDefault(self):
         """Test RangeField's checking of the default value
@@ -165,12 +169,13 @@ class ConfigTest(unittest.TestCase):
         ):
             class Cfg1(pexConfig.Config):
                 r = pexConfig.RangeField(doc="", dtype=int,
-                    default=val, min=minVal, max=maxVal,
-                    inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                         default=val, min=minVal, max=maxVal,
+                                         inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+
             class Cfg2(pexConfig.Config):
                 r2 = pexConfig.RangeField(doc="", dtype=float,
-                    default=val, min=minVal, max=maxVal,
-                    inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
+                                          default=val, min=minVal, max=maxVal,
+                                          inclusiveMin=inclusiveMin, inclusiveMax=inclusiveMax)
         if shouldRaise:
             self.assertRaises(pexConfig.FieldValidationError, Cfg1)
             self.assertRaises(pexConfig.FieldValidationError, Cfg2)
@@ -179,11 +184,11 @@ class ConfigTest(unittest.TestCase):
             Cfg2()
 
     def testSave(self):
-        self.comp.r="BBB"
-        self.comp.p="AAA"
-        self.comp.c.f=5.
+        self.comp.r = "BBB"
+        self.comp.p = "AAA"
+        self.comp.c.f = 5.
         self.comp.save("roundtrip.test")
-        
+
         roundTrip = Complex()
         roundTrip.load("roundtrip.test")
         os.remove("roundtrip.test")
@@ -192,7 +197,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.comp.r.name, roundTrip.r.name)
 
         del roundTrip
-        #test saving to an open file
+        # test saving to an open file
         outfile = open("roundtrip.test", "w")
         self.comp.saveToStream(outfile)
         outfile.close()
@@ -223,18 +228,20 @@ class ConfigTest(unittest.TestCase):
     def testInheritance(self):
         class AAA(pexConfig.Config):
             a = pexConfig.Field("AAA.a", int, default=4)
+
         class BBB(AAA):
             b = pexConfig.Field("BBB.b", int, default=3)
+
         class CCC(BBB):
             c = pexConfig.Field("CCC.c", int, default=2)
-        
-        #test multi-level inheritance
-        c= CCC()
+
+        # test multi-level inheritance
+        c = CCC()
         self.assertEqual(c.toDict().has_key("a"), True)
         self.assertEqual(c._fields["a"].dtype, int)
         self.assertEqual(c.a, 4)
 
-        #test conflicting multiple inheritance
+        # test conflicting multiple inheritance
         class DDD(pexConfig.Config):
             a = pexConfig.Field("DDD.a", float, default=0.0)
 
@@ -253,9 +260,10 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(f.toDict().has_key("a"), True)
         self.assertEqual(f.a, 4)
 
-        #test inheritance from non Config objects
+        # test inheritance from non Config objects
         class GGG(object):
             a = pexConfig.Field("AAA.a", float, default=10.)
+
         class HHH(GGG, AAA):
             pass
         h = HHH()
@@ -263,15 +271,15 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(h.toDict().has_key("a"), True)
         self.assertEqual(h.a, 10.0)
 
-        #test partial Field redefinition
+        # test partial Field redefinition
 
         class III(AAA):
             pass
-        III.a.default=5
+        III.a.default = 5
 
         self.assertEqual(III.a.default, 5)
         self.assertEqual(AAA.a.default, 4)
-    
+
     def testConvert(self):
         pol = pexConfig.makePolicy(self.simple)
         self.assertEqual(pol.exists("i"), False)
@@ -279,7 +287,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(pol.get("b"), self.simple.b)
         self.assertEqual(pol.get("c"), self.simple.c)
         self.assertEqual(pol.getArray("l"), list(self.simple.l))
-        
+
         ps = pexConfig.makePropertySet(self.simple)
         self.assertEqual(ps.exists("i"), False)
         self.assertEqual(ps.get("f"), self.simple.f)
@@ -292,16 +300,17 @@ class ConfigTest(unittest.TestCase):
 
         ps = pexConfig.makePropertySet(self.comp)
         self.assertEqual(ps.get("c.f"), self.comp.c.f)
+
     def testFreeze(self):
         self.comp.freeze()
 
         self.assertRaises(pexConfig.FieldValidationError, setattr, self.comp.c, "f", 10.0)
         self.assertRaises(pexConfig.FieldValidationError, setattr, self.comp, "r", "AAA")
         self.assertRaises(pexConfig.FieldValidationError, setattr, self.comp, "p", "AAA")
-        self.assertRaises(pexConfig.FieldValidationError, setattr, self.comp.p["AAA"], "f", 5.0) 
+        self.assertRaises(pexConfig.FieldValidationError, setattr, self.comp.p["AAA"], "f", 5.0)
 
     def checkImportRoundTrip(self, importStatement, searchString, shouldBeThere):
-        self.comp.c.f=5.
+        self.comp.c.f = 5.
 
         # Generate a Config through loading
         stream = io.BytesIO()
@@ -310,7 +319,7 @@ class ConfigTest(unittest.TestCase):
         roundtrip = Complex()
         roundtrip.loadFromStream(stream.getvalue())
         self.assertEqual(self.comp.c.f, roundtrip.c.f)
-        
+
         # Check the save stream
         stream = io.BytesIO()
         roundtrip.saveToStream(stream)
@@ -320,9 +329,8 @@ class ConfigTest(unittest.TestCase):
         else:
             self.assertFalse(re.search(searchString, stream.getvalue()))
 
-
     def testImports(self):
-        importing = "import lsst.daf.base.citizen\n" # A module not used by anything else, but which exists
+        importing = "import lsst.daf.base.citizen\n"  # A module not used by anything else, but which exists
         self.checkImportRoundTrip(importing, importing, True)
 
     def testBadImports(self):
@@ -391,6 +399,7 @@ except ImportError:
         self.assert_("Inequality in r['AAA']" in output)
         self.assert_("Inequality in r['BBB']" not in output)
 
+
 def suite():
     utilsTests.init()
     suites = []
@@ -398,8 +407,9 @@ def suite():
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
+
 def run(exit=False):
     utilsTests.run(suite(), exit)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     run(True)

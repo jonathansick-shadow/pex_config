@@ -19,12 +19,15 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import traceback, copy, collections
+import traceback
+import copy
+import collections
 
 from .config import Config, Field, FieldValidationError, _typeStr, _joinNamePath
 from .comparison import getComparisonName, compareScalars, compareConfigs
 
 __all__ = ["ConfigChoiceField"]
+
 
 class SelectionSet(collections.MutableSet):
     """
@@ -35,10 +38,11 @@ class SelectionSet(collections.MutableSet):
     items from the set of active configs. Each change to the selection is
     tracked in the field's history.
     """
+
     def __init__(self, dict_, value, at=None, label="assignment", setHistory=True):
         if at is None:
             at = traceback.extract_stack()[:-1]
-        self._dict = dict_;
+        self._dict = dict_
         self._field = self._dict._field
         self._config = self._dict._config
         self.__history = self._config._history.setdefault(self._field.name, [])
@@ -46,14 +50,14 @@ class SelectionSet(collections.MutableSet):
             try:
                 for v in value:
                     if v not in self._dict:
-                        #invoke __getitem__ to ensure it's present
+                        # invoke __getitem__ to ensure it's present
                         self._dict.__getitem__(v, at=at)
             except TypeError:
                 msg = "Value %s is of incorrect type %s. Sequence type expected"(value, _typeStr(value))
                 raise FieldValidationError(self._field, self._config, msg)
-            self._set=set(value)
+            self._set = set(value)
         else:
-            self._set=set()
+            self._set = set()
 
         if setHistory:
             self.__history.append(("Set selection to %s"%self, at, label))
@@ -61,13 +65,13 @@ class SelectionSet(collections.MutableSet):
     def add(self, value, at= None):
         if self._config._frozen:
             raise FieldValidationError(self._field, self._config,
-                    "Cannot modify a frozen Config")
+                                       "Cannot modify a frozen Config")
 
         if at is None:
             at = traceback.extract_stack()[:-1]
 
         if value not in self._dict:
-            #invoke __getitem__ to make sure it's present
+            # invoke __getitem__ to make sure it's present
             self._dict.__getitem__(value, at=at)
 
         self.__history.append(("added %s to selection"%value, at, "selection"))
@@ -76,7 +80,7 @@ class SelectionSet(collections.MutableSet):
     def discard(self, value, at=None):
         if self._config._frozen:
             raise FieldValidationError(self._field, self._config,
-                    "Cannot modify a frozen Config")
+                                       "Cannot modify a frozen Config")
 
         if value not in self._dict:
             return
@@ -88,9 +92,13 @@ class SelectionSet(collections.MutableSet):
         self._set.discard(value)
 
     def __len__(self): return len(self._set)
+
     def __iter__(self): return iter(self._set)
+
     def __contains__(self, value): return value in self._set
+
     def __repr__(self): return repr(list(self._set))
+
     def __str__(self): return str(list(self._set))
 
 
@@ -100,6 +108,7 @@ class ConfigInstanceDict(collections.Mapping):
     typemap must support the following:
     - typemap[name]: return the config class associated with the given name
     """
+
     def __init__(self, config, field):
         collections.Mapping.__init__(self)
         self._dict = dict()
@@ -117,7 +126,7 @@ class ConfigInstanceDict(collections.Mapping):
 
     def __iter__(self): return iter(self._field.typemap)
 
-    def _setSelection(self,value, at=None, label="assignment"):
+    def _setSelection(self, value, at=None, label="assignment"):
         if self._config._frozen:
             raise FieldValidationError(self._field, self._config, "Cannot modify a frozen Config")
 
@@ -125,46 +134,50 @@ class ConfigInstanceDict(collections.Mapping):
             at = traceback.extract_stack()[:-2]
 
         if value is None:
-            self._selection=None
+            self._selection = None
         elif self._field.multi:
-            self._selection=SelectionSet(self, value, setHistory=False)
+            self._selection = SelectionSet(self, value, setHistory=False)
         else:
             if value not in self._dict:
-                self.__getitem__(value, at=at) # just invoke __getitem__ to make sure it's present
+                self.__getitem__(value, at=at)  # just invoke __getitem__ to make sure it's present
             self._selection = value
         self._history.append((value, at, label))
 
     def _getNames(self):
         if not self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Single-selection field has no attribute 'names'")
+                                       "Single-selection field has no attribute 'names'")
         return self._selection
+
     def _setNames(self, value):
         if not self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Single-selection field has no attribute 'names'")
+                                       "Single-selection field has no attribute 'names'")
         self._setSelection(value)
+
     def _delNames(self):
         if not self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Single-selection field has no attribute 'names'")
+                                       "Single-selection field has no attribute 'names'")
         self._selection = None
 
     def _getName(self):
         if self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Multi-selection field has no attribute 'name'")
+                                       "Multi-selection field has no attribute 'name'")
         return self._selection
+
     def _setName(self, value):
         if self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Multi-selection field has no attribute 'name'")
+                                       "Multi-selection field has no attribute 'name'")
         self._setSelection(value)
+
     def _delName(self):
         if self._field.multi:
             raise FieldValidationError(self._field, self._config,
-                    "Multi-selection field has no attribute 'name'")
-        self._selection=None
+                                       "Multi-selection field has no attribute 'name'")
+        self._selection = None
 
     """
     In a multi-selection ConfigInstanceDict, list of names of active items
@@ -219,8 +232,8 @@ class ConfigInstanceDict(collections.Mapping):
             raise FieldValidationError(self._field, self._config, "Unknown key %r"%k)
 
         if value != dtype and type(value) != dtype:
-            msg = "Value %s at key %k is of incorrect type %s. Expected type %s"%\
-                    (value, k, _typeStr(value), _typeStr(dtype))
+            msg = "Value %s at key %k is of incorrect type %s. Expected type %s" %\
+                (value, k, _typeStr(value), _typeStr(dtype))
             raise FieldValidationError(self._field, self._config, msg)
 
         if at is None:
@@ -253,8 +266,6 @@ class ConfigInstanceDict(collections.Mapping):
             # We throw everything else.
             msg = "%s has no attribute %s"%(_typeStr(self._field), attr)
             raise FieldValidationError(self._field, self._config, msg)
-
-
 
 
 class ConfigChoiceField(Field):
@@ -296,9 +307,11 @@ class ConfigChoiceField(Field):
     When saving a config with a ConfigChoiceField, the entire set is saved, as well as the active selection
     """
     instanceDictClass = ConfigInstanceDict
+
     def __init__(self, doc, typemap, default=None, optional=False, multi=False):
         source = traceback.extract_stack(limit=2)[0]
-        self._setup( doc=doc, dtype=self.instanceDictClass, default=default, check=None, optional=optional, source=source)
+        self._setup(doc=doc, dtype=self.instanceDictClass, default=default,
+                    check=None, optional=optional, source=source)
         self.typemap = typemap
         self.multi = multi
 
@@ -327,7 +340,7 @@ class ConfigChoiceField(Field):
             at = traceback.extract_stack()[:-1]
         instanceDict = self._getOrMake(instance)
         if isinstance(value, self.instanceDictClass):
-            for k,v  in value.iteritems():
+            for k, v in value.iteritems():
                 instanceDict.__setitem__(k, v, at=at, label=label)
             instanceDict._setSelection(value._selection, at=at, label=label)
 
@@ -356,14 +369,14 @@ class ConfigChoiceField(Field):
 
         dict_ = {}
         if self.multi:
-            dict_["names"]=instanceDict.names
+            dict_["names"] = instanceDict.names
         else:
-            dict_["name"] =instanceDict.name
+            dict_["name"] = instanceDict.name
 
         values = {}
         for k, v in instanceDict.iteritems():
-            values[k]=v.toDict()
-        dict_["values"]=values
+            values[k] = v.toDict()
+        dict_["values"] = values
 
         return dict_
 
@@ -388,7 +401,7 @@ class ConfigChoiceField(Field):
         WARNING: this must be overridden by subclasses if they change the constructor signature!
         """
         other = type(self)(doc=self.doc, typemap=self.typemap, default=copy.deepcopy(self.default),
-                          optional=self.optional, multi=self.multi)
+                           optional=self.optional, multi=self.multi)
         other.source = self.source
         return other
 
@@ -412,7 +425,7 @@ class ConfigChoiceField(Field):
         name = getComparisonName(
             _joinNamePath(instance1._name, self.name),
             _joinNamePath(instance2._name, self.name)
-            )
+        )
         if not compareScalars("selection for %s" % name, d1._selection, d2._selection, output=output):
             return False
         if d1._selection is None:
